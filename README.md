@@ -1,7 +1,6 @@
 # local-media-server
 NodeJS Local media server
-
-# Work in Progress
+# WIP
 
 # Run it !
 ```
