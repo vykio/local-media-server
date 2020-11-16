@@ -1,0 +1,6 @@
+Used for MKV -> MP4:
+ffmpeg -i input.mkv -vcodec copy -acodec aac output.mp4
+
+Used for AVI -> MP4:
+ffmpeg -i input.avi -vcodec h264 -acodec aac output.mp4
+

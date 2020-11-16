@@ -1,0 +1,7 @@
+html
+  head
+    title= Videos
+  body
+    for video in videos
+        a(href='/'+video.id) #{video.path}
+        br

@@ -1,6 +1,14 @@
 html
   head
     title= title
+    <link href="https://vjs.zencdn.net/7.8.4/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/ie8/1.1.2/videojs-ie8.min.js"></script>
   body
-    video(width='320', height='240', autoplay='')
+    center
+      video(class="video-js",preload="auto",width='640', height='480', autoplay='autoplay', controls, data-setup="{}")
         source(src='/video/'+source, type='video/mp4')
+    
+
+      <script src="https://vjs.zencdn.net/7.8.4/video.js"></script>
+
+      

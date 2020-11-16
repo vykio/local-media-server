@@ -33,7 +33,7 @@ glob("library/*", options, function (er, files) {
 watcher
   .on('unlink', function(path) {
     console.log('File', path, 'has been removed');
-    
+    Video.deleteOne({path: path}).exec();
   })
   .on('add', function(path) {
       console.log('File', path, 'has been added');
@@ -52,8 +52,10 @@ watcher
     })
 
 
-app.get("/", function (req, res) {
-  res.sendFile(__dirname + "/index.html");
+app.get("/", async function (req, res) {
+  const videos = await Video.find().sort({created:-1}).exec();
+  console.log(videos);
+  res.render('showvideos', {videos: videos});
 });
 
 app.listen(8000, function () {
@@ -70,29 +72,71 @@ function getPathFromId(id) {
     
 }
 
+app.get("/test", function (req,res){
+  res.render('index', {title: 'Video', message: 'lpb', source:'/testmkv'});
+});
+
+app.get("/testmkv", function (req, res) {
+    var file = path.resolve(__dirname,"library/bigbuck.mp4");
+    fs.stat(file, function(err, stats) {
+      if (err) {
+        if (err.code === 'ENOENT') {
+          // 404 Error if file not found
+          return res.sendStatus(404);
+        }
+      res.end(err);
+      }
+      var range = req.headers.range;
+      if (!range) {
+       // 416 Wrong range
+       return res.sendStatus(416);
+      }
+      var positions = range.replace(/bytes=/, "").split("-");
+      var start = parseInt(positions[0], 10);
+      var total = stats.size;
+      var end = positions[1] ? parseInt(positions[1], 10) : total - 1;
+      var chunksize = (end - start) + 1;
+
+      res.writeHead(206, {
+        "Content-Range": "bytes " + start + "-" + end + "/" + total,
+        "Accept-Ranges": "bytes",
+        "Content-Length": chunksize,
+        "Content-Type": "video/mp4"
+      });
+
+      var stream = fs.createReadStream(file, { start: start, end: end })
+        .on("open", function() {
+          stream.pipe(res);
+        }).on("error", function(err) {
+          res.end(err);
+        });
+    });
+});
+
 app.get("/:id", function (req, res) {
     console.log(req.params.id);
     getPathFromId(req.params.id).then(function(video) {
-        console.log(video.path);
+      //const videoPath = path.join(__dirname, video.path)
+      if (video == null) {
+        res.redirect('/');
+      } else {
+        res.render('index', {title: 'Video', message: 'lpb', source:req.params.id});
+      }
     });
-    res.render('index', {title: 'Video', message: 'lpb', source:req.params.id});
+    
 });
 
 app.get("/video/:id", function (req, res) {
 
-
-
-
-
     // Ensure there is a range given for the video
-    const range = req.headers.range;
+    /*const range = req.headers.range;
     if (!range) {
       res.status(400).send("Requires Range header");
     }
   
     // get video stats (about 61MB)
     const videoPath = path.join(__dirname, 'library/bigbuck.mp4')
-    const videoSize = fs.statSync(videoPath).size;
+    const videoSize = fs.statSync('library/bigbuck.mp4').size;
   
     // Parse Range
     // Example: "bytes=32324-"
@@ -116,6 +160,53 @@ app.get("/video/:id", function (req, res) {
     const videoStream = fs.createReadStream(videoPath, { start, end });
   
     // Stream the video chunk to the client
-    videoStream.pipe(res);
+    videoStream.pipe(res);*/
+
+    getPathFromId(req.params.id).then(function(video) {
+      //const videoPath = path.join(__dirname, video.path)
+      if (video == null) {
+        res.redirect('/');
+      }
+      const path = video.path
+      const stat = fs.statSync(path)
+      const fileSize = stat.size
+      const range = req.headers.range
+  
+      if (range) {
+      const parts = range.replace(/bytes=/, "").split("-")
+      var  start = parseInt(parts[0], 10)
+      var end = parts[1]
+      ? parseInt(parts[1], 10)
+      : fileSize-1
+  
+      var chunksize = (end-start)+1
+
+      // poor hack to send smaller chunks to the browser
+      var maxChunk = 1024 * 1024; // 1MB at a time
+      if (chunksize > maxChunk) {
+        end = start + maxChunk - 1;
+        chunksize = (end - start) + 1;
+      }
+
+      const file = fs.createReadStream(path, {start, end})
+      const head = {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': 'video/mp4',
+      }
+  
+      res.writeHead(206, head)
+      file.pipe(res)
+      } else {
+      const head = {
+      'Content-Length': fileSize,
+      'Content-Type': 'video/mp4',
+      }
+      res.writeHead(200, head)
+      fs.createReadStream(path).pipe(res)
+      }
+    });
+    
   });
   
