@@ -16,7 +16,7 @@ npm run start
 
 # How it works
 
-Put {movies (.mp4)} in ```/library```. Start MongoDB. Start the app. Go to [localhost:8000](https://localhost:8000).
+Put {movies (.mp4)} in ```/library```. Start MongoDB. Start the app. Go to [localhost:8000](http://localhost:8000).
 Each movie/file in the library folder will generate a link. For exemple: ```localhost:8000/ABCDE``` with a video stream at ```localhost:8000/video/ABCDE```. And voila.
 
 
